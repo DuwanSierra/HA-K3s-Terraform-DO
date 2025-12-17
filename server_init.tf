@@ -2,7 +2,7 @@ resource "digitalocean_droplet" "k3s_server_init" {
   count = 1
   name  = "k3s-server-${var.region}-${random_id.server_node_id[count.index].hex}-1"
 
-  image      = "ubuntu-20-04-x64"
+  image      = var.droplet_image
   tags       = [digitalocean_tag.server.id]
   region     = var.region
   size       = var.server_size
