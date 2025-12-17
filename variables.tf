@@ -155,7 +155,7 @@ variable "agent_tag" {
   default     = "k3s_agent"
 }
 
-variable "droplet_iamge" {
+variable "droplet_image" {
   type        = string
   description = "Droplet image to use."
   default     = "ubuntu-24-04-x64"
