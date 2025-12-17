@@ -1,0 +1,23 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    image:
+      name: traefik
+      tag: v${traefik_ver}
+    service:
+      annotations:
+        service.beta.kubernetes.io/do-loadbalancer-name: "traefik-ingress"
+        service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+    additionalArguments:
+      - "--entrypoints.web.proxyprotocol"
+      - "--entrypoints.web.proxyprotocol.insecure"
+      - "--entrypoints.websecure.proxyprotocol"
+      - "--entrypoints.websecure.proxyprotocol.insecure"
+      - "--log.level=INFO"
+    logs:
+      access:
+        enabled: true
