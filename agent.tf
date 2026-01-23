@@ -13,6 +13,7 @@ resource "digitalocean_droplet" "k3s_agent" {
     k3s_channel = var.k3s_channel
     k3s_token   = random_password.k3s_token.result
     k3s_lb_ip   = digitalocean_loadbalancer.k3s_lb.ip
+    flannel_backend = var.flannel_backend
   })
 }
 
