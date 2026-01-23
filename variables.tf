@@ -60,11 +60,11 @@ variable "database_node_count" {
 
 variable "flannel_backend" {
   type        = string
-  description = "Flannel Backend Type. Valid options include vxlan (default), ipsec or wireguard"
+  description = "Flannel Backend Type. Valid options include vxlan (default), ipsec, wireguard-native or none"
   default     = "vxlan"
   validation {
-    condition     = length(regexall("^ipsec|vxlan|wireguard-native$", var.flannel_backend)) > 0
-    error_message = "Invalid Flannel backend value. Valid backend types are vxlan, ipsec & wireguard-native."
+    condition     = length(regexall("^ipsec|vxlan|wireguard-native|none$", var.flannel_backend)) > 0
+    error_message = "Invalid Flannel backend value. Valid backend types are vxlan, ipsec, wireguard-native & none."
   }
 }
 
