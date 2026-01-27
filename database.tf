@@ -1,4 +1,5 @@
 resource "digitalocean_database_user" "dbuser" {
+  count      = var.database_user == "doadmin" ? 0 : 1
   cluster_id = digitalocean_database_cluster.k3s.id
   name       = var.database_user
 }
