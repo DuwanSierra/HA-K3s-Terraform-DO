@@ -1,8 +1,8 @@
 locals {
   db_host = digitalocean_database_cluster.k3s.private_host
   db_port = digitalocean_database_cluster.k3s.port
-  db_user = var.database_user
-  db_pass = digitalocean_database_user.dbuser.password
+  db_user = digitalocean_database_cluster.k3s.user
+  db_pass = digitalocean_database_cluster.k3s.password
   db_name = digitalocean_database_cluster.k3s.database
 
   postgres_uri = "postgres://${local.db_user}:${local.db_pass}@${local.db_host}:${local.db_port}/${local.db_name}"
