@@ -7,29 +7,71 @@ apt-get install -yq \
     ntp \
     wireguard
 
-# Store Droplet ID in variable (utilises DO's Metadata Service - https://developers.digitalocean.com/documentation/metadata/)
+# Store Droplet ID in variable (utilises DO's Metadata Service)
 DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
 
-# Configurar flags de k3s basado en flannel_backend
+# Crear directorio de configuración de K3s
+mkdir -p /etc/rancher/k3s
+
+# Crear archivo de configuración base
+cat > /etc/rancher/k3s/config.yaml <<EOF
+datastore-endpoint: "${db_cluster_uri}"
+tls-san:
+  - "${k3s_lb_ip}"
+disable:
+  - local-storage
+  - servicelb
+  - cloud-controller
+disable-cloud-controller: true
+kubelet-arg:
+  - "provider-id=digitalocean://$DROPLET_ID"
+  - "cloud-provider=external"
+EOF
+
+# Configurar flannel según backend
 if [ "${flannel_backend}" = "none" ]; then
-    K3S_FLANNEL_ARGS="--flannel-backend=none --disable-network-policy"
+    cat >> /etc/rancher/k3s/config.yaml <<EOF
+flannel-backend: "none"
+disable-network-policy: true
+EOF
 else
-    K3S_FLANNEL_ARGS="--flannel-backend=${flannel_backend} --flannel-iface=eth1"
+    cat >> /etc/rancher/k3s/config.yaml <<EOF
+flannel-backend: "${flannel_backend}"
+flannel-iface: "eth1"
+EOF
 fi
 
+# Agregar node-taint si está definido (critical_taint debería venir como "--node-taint CriticalAddonsOnly=true:NoExecute" o vacío)
+if [ -n "${critical_taint}" ] && [ "${critical_taint}" != "" ]; then
+    cat >> /etc/rancher/k3s/config.yaml <<EOF
+node-taint:
+  - "CriticalAddonsOnly=true:NoExecute"
+EOF
+fi
 
-# k3s
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s - \
-    --datastore-endpoint="${db_cluster_uri}" \
-    ${critical_taint} \
-    --kubelet-arg "provider-id=digitalocean://$DROPLET_ID" \
-    --tls-san ${k3s_lb_ip} \
-    $K3S_FLANNEL_ARGS \
-    --disable local-storage \
-    --disable-cloud-controller \
-    ${enable_traefik} \
-    --disable servicelb \
-    --kubelet-arg 'cloud-provider=external'
+# Configurar Traefik (enable_traefik debería venir como "--disable traefik" o vacío)
+if [ "${enable_traefik}" = "--disable traefik" ]; then
+    # Agregar traefik a la lista de disable si no está ya
+    sed -i '/^disable:/a\  - traefik' /etc/rancher/k3s/config.yaml
+fi
+
+# Log de debug del config generado
+echo "=== K3S Config Generated ===" >> /var/log/k3s-config-debug.log
+cat /etc/rancher/k3s/config.yaml >> /var/log/k3s-config-debug.log
+
+# Instalar K3s
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s - server
+
+# Esperar a que K3s esté listo
+echo "Esperando a que K3s esté listo..."
+until kubectl get nodes &>/dev/null; do
+    echo "Esperando a que el API server esté disponible..."
+    sleep 5
+done
+
+# Log de verificación de certificados
+echo "=== Certificate SANs ===" >> /var/log/k3s-config-debug.log
+openssl x509 -in /var/lib/rancher/k3s/server/tls/serving-kube-apiserver.crt -text -noout | grep -A1 "Subject Alternative Name" >> /var/log/k3s-config-debug.log 2>&1
 
 # additional manifests
 while ! test -d /var/lib/rancher/k3s/server/manifests; do
