@@ -14,7 +14,7 @@ DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
 if [ "${flannel_backend}" = "none" ]; then
     K3S_FLANNEL_ARGS="--flannel-backend=none --disable-network-policy"
 else
-    K3S_FLANNEL_ARGS="--flannel-backend=${flannel_backend} --flannel-iface=eth0"
+    K3S_FLANNEL_ARGS="--flannel-backend=${flannel_backend} --flannel-iface=eth1"
 fi
 
 # Escribir configuración de k3s
