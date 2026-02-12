@@ -35,12 +35,11 @@ spec:
         - key: "node-role.kubernetes.io/control-plane"
           effect: NoSchedule
       containers:
-      - image: digitalocean/digitalocean-cloud-controller-manager:v0.1.42
+      - image: digitalocean/digitalocean-cloud-controller-manager:v0.1.65
         name: digitalocean-cloud-controller-manager
         command:
           - "/bin/digitalocean-cloud-controller-manager"
           - "--leader-elect=false"
-          - "--secure-port=10260"
         resources:
           requests:
             cpu: 100m
