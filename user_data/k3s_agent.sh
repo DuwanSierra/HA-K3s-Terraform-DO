@@ -18,6 +18,6 @@ fi
 
 # k3s
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} K3S_URL=https://${k3s_lb_ip}:6443 sh -s - \
-    --kubelet-arg 'cloud-provider=external'  \
-    --kubelet-arg "provider-id=digitalocean://$DROPLET_ID" \
+    --kubelet-arg="cloud-provider=external"  \
+    --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
     $K3S_FLANNEL_ARGS

@@ -40,6 +40,7 @@ spec:
         command:
           - "/bin/digitalocean-cloud-controller-manager"
           - "--leader-elect=false"
+          - "--secure-port=10268"
         resources:
           requests:
             cpu: 100m

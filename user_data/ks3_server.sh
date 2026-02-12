@@ -28,10 +28,10 @@ EOF
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s - server \
     --datastore-endpoint="${db_cluster_uri}" \
     ${critical_taint} \
-    --kubelet-arg "provider-id=digitalocean://$DROPLET_ID" \
+    --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
     $K3S_FLANNEL_ARGS \
     --disable local-storage \
     --disable servicelb \
     --disable-cloud-controller \
     ${enable_traefik} \
-    --kubelet-arg 'cloud-provider=external'
+    --kubelet-arg="cloud-provider=external"
