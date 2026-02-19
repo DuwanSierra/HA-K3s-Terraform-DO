@@ -17,6 +17,7 @@ resource "digitalocean_droplet" "k3s_server_init" {
     do_ccm_fw_name      = digitalocean_firewall.ccm_firewall.name
     do_ccm_fw_tags      = local.ccm_fw_tags
     flannel_backend     = var.flannel_backend
+    cni_provider        = var.cni_provider
     k3s_lb_ip           = digitalocean_loadbalancer.k3s_lb.ip
     db_cluster_uri      = local.db_cluster_uri
     critical_taint      = local.taint_critical

@@ -11,11 +11,7 @@ apt-get install -yq \
 DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
 
 # Configurar flags de k3s basado en flannel_backend
-if [ "${flannel_backend}" = "none" ]; then
-    K3S_FLANNEL_ARGS="--flannel-backend=none --disable-network-policy"
-else
-    K3S_FLANNEL_ARGS="--flannel-backend=${flannel_backend} --flannel-iface=eth1"
-fi
+K3S_FLANNEL_ARGS="--flannel-backend=none --disable-network-policy"
 
 # Escribir configuración de k3s
 install -d /etc/rancher/k3s
@@ -35,6 +31,47 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3
     --disable-cloud-controller \
     ${enable_traefik} \
     --kubelet-arg="cloud-provider=external"
+
+# wait for api server
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+until kubectl get nodes >/dev/null 2>&1; do
+    echo "Waiting for Kubernetes API"
+    sleep 2
+done
+
+# install CNI before applying additional manifests
+case "${cni_provider}" in
+    flannel)
+        kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+        ;;
+    cilium)
+        CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+        CLI_ARCH=amd64
+        if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+        curl -L --fail --remote-name-all \
+            https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+        sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+        sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+        rm -f cilium-linux-${CLI_ARCH}.tar.gz cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+        cilium install
+        ;;
+    calico)
+        kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/operator-crds.yaml
+        kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/tigera-operator.yaml
+        curl -sL https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/custom-resources.yaml \
+          | sed -E 's#cidr: 192.168.0.0/16#cidr: 10.42.0.0/16#' \
+          | kubectl apply -f -
+        ;;
+    antrea)
+        kubectl apply -f https://github.com/antrea-io/antrea/releases/latest/download/antrea.yml
+        ;;
+    none|"")
+        echo "Skipping CNI install"
+        ;;
+    *)
+        echo "Unknown cni_provider: ${cni_provider}"
+        ;;
+esac
 
 # additional manifests
 while ! test -d /var/lib/rancher/k3s/server/manifests; do

@@ -61,10 +61,20 @@ variable "database_node_count" {
 variable "flannel_backend" {
   type        = string
   description = "Flannel Backend Type. Valid options include vxlan (default), ipsec, wireguard-native or none"
-  default     = "vxlan"
+  default     = "none"
   validation {
     condition     = length(regexall("^ipsec|vxlan|wireguard-native|none$", var.flannel_backend)) > 0
     error_message = "Invalid Flannel backend value. Valid backend types are vxlan, ipsec, wireguard-native & none."
+  }
+}
+
+variable "cni_provider" {
+  type        = string
+  description = "CNI to install after K3s is up. Valid options: flannel, cilium, calico, antrea, none"
+  default     = "flannel"
+  validation {
+    condition     = length(regexall("^flannel|cilium|calico|antrea|none$", var.cni_provider)) > 0
+    error_message = "Invalid CNI provider. Valid values are flannel, cilium, calico, antrea & none."
   }
 }
 
