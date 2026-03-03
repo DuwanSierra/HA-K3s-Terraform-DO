@@ -37,6 +37,10 @@ resource "digitalocean_droplet" "k3s_server_init" {
     })) : ""
     cert_manager     = var.cert_manager == true ? local.install_cert_manager : ""
     sys_upgrade_ctrl = var.sys_upgrade_ctrl == true ? base64gzip(file("${path.module}/manifests/system-upgrade-controller.yaml")) : ""
+    cni_flannel_script = file("${path.module}/user_data/cni_flannel.sh")
+    cni_cilium_script  = file("${path.module}/user_data/cni_cilium.sh")
+    cni_calico_script  = file("${path.module}/user_data/cni_calico.sh")
+    cni_antrea_script  = file("${path.module}/user_data/cni_antrea.sh")
   })
 }
 

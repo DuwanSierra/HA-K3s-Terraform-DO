@@ -39,39 +39,57 @@ until kubectl get nodes >/dev/null 2>&1; do
     sleep 2
 done
 
+# Copy CNI scripts to disk (content injected by Terraform from user_data/cni_*.sh)
+mkdir -p /tmp/cni-scripts
+
+cat > /tmp/cni-scripts/cni_flannel.sh <<'SCRIPT_END'
+${cni_flannel_script}
+SCRIPT_END
+
+cat > /tmp/cni-scripts/cni_cilium.sh <<'SCRIPT_END'
+${cni_cilium_script}
+SCRIPT_END
+
+cat > /tmp/cni-scripts/cni_calico.sh <<'SCRIPT_END'
+${cni_calico_script}
+SCRIPT_END
+
+cat > /tmp/cni-scripts/cni_antrea.sh <<'SCRIPT_END'
+${cni_antrea_script}
+SCRIPT_END
+
+chmod +x /tmp/cni-scripts/*.sh
+
 # install CNI before applying additional manifests
+echo "=========================================="
+echo "Installing CNI: ${cni_provider}"
+echo "=========================================="
+
 case "${cni_provider}" in
     flannel)
-        kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+        bash /tmp/cni-scripts/cni_flannel.sh
         ;;
     cilium)
-        CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
-        CLI_ARCH=amd64
-        if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-        curl -L --fail --remote-name-all \
-            https://github.com/cilium/cilium-cli/releases/download/$${CILIUM_CLI_VERSION}/cilium-linux-$${CLI_ARCH}.tar.gz{,.sha256sum}
-        sha256sum --check cilium-linux-$${CLI_ARCH}.tar.gz.sha256sum
-        sudo tar xzvfC cilium-linux-$${CLI_ARCH}.tar.gz /usr/local/bin
-        rm -f cilium-linux-$${CLI_ARCH}.tar.gz cilium-linux-$${CLI_ARCH}.tar.gz.sha256sum
-        cilium install
+        bash /tmp/cni-scripts/cni_cilium.sh
         ;;
     calico)
-        kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/operator-crds.yaml
-        kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/tigera-operator.yaml
-        curl -sL https://raw.githubusercontent.com/projectcalico/calico/v3.31.3/manifests/custom-resources.yaml \
-          | sed -E 's#cidr: 192.168.0.0/16#cidr: 10.42.0.0/16#' \
-          | kubectl apply -f -
+        bash /tmp/cni-scripts/cni_calico.sh
         ;;
     antrea)
-        kubectl apply -f https://github.com/antrea-io/antrea/releases/latest/download/antrea.yml
+        bash /tmp/cni-scripts/cni_antrea.sh
         ;;
     none|"")
-        echo "Skipping CNI install"
+        echo "[CNI] Skipping CNI install"
         ;;
     *)
-        echo "Unknown cni_provider: ${cni_provider}"
+        echo "[CNI] ERROR: Unknown cni_provider: ${cni_provider}"
+        exit 1
         ;;
 esac
+
+echo "[CNI] =========================================="
+echo "[CNI] CNI installation and validation completed"
+echo "[CNI] =========================================="
 
 # additional manifests
 while ! test -d /var/lib/rancher/k3s/server/manifests; do
