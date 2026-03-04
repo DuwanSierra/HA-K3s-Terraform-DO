@@ -8,6 +8,7 @@ apt-get install -yq \
 
 # Store Droplet ID in variable (utilises DO's Metadata Service - https://developers.digitalocean.com/documentation/metadata/)
 DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
+PRIVATE_IP=$(curl -s http://169.254.169.254/metadata/v1/interfaces/private/0/ipv4/address)
 
 # Escribir configuración de k3s
 install -d /etc/rancher/k3s
@@ -22,6 +23,7 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3
     ${critical_taint} \
     --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
     --flannel-iface=eth1 \
+    --node-ip=$PRIVATE_IP \
     --disable local-storage \
     --disable servicelb \
     --disable-cloud-controller \
