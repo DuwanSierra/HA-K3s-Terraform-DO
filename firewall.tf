@@ -1,7 +1,5 @@
 resource "digitalocean_firewall" "ccm_firewall" {
   name = "ccm-firewall"
-
-  tags = [digitalocean_tag.server.name, digitalocean_tag.agent.name]
   outbound_rule {
     protocol              = "icmp"
     destination_addresses = ["0.0.0.0/0", "::/0"]
