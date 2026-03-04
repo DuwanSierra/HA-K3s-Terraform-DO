@@ -16,8 +16,6 @@ resource "digitalocean_droplet" "k3s_server_init" {
     do_cluster_vpc_id   = digitalocean_vpc.k3s_vpc.id
     do_ccm_fw_name      = digitalocean_firewall.ccm_firewall.name
     do_ccm_fw_tags      = local.ccm_fw_tags
-    flannel_backend     = var.flannel_backend
-    cni_provider        = var.cni_provider
     k3s_lb_ip           = digitalocean_loadbalancer.k3s_lb.ip
     db_cluster_uri      = local.db_cluster_uri
     critical_taint      = local.taint_critical
@@ -37,10 +35,6 @@ resource "digitalocean_droplet" "k3s_server_init" {
     })) : ""
     cert_manager     = var.cert_manager == true ? local.install_cert_manager : ""
     sys_upgrade_ctrl = var.sys_upgrade_ctrl == true ? base64gzip(file("${path.module}/manifests/system-upgrade-controller.yaml")) : ""
-    cni_flannel_script = file("${path.module}/user_data/cni_flannel.sh")
-    cni_cilium_script  = file("${path.module}/user_data/cni_cilium.sh")
-    cni_calico_script  = file("${path.module}/user_data/cni_calico.sh")
-    cni_antrea_script  = file("${path.module}/user_data/cni_antrea.sh")
   })
 }
 

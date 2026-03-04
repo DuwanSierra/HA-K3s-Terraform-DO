@@ -109,7 +109,6 @@ Functional examples are included in the
 | database_engine | Database engine. `postgres` (v13) or `mysql` (v8) | string | `"postgres"` | no |
 | database_size | Database Droplet size associated with the cluster e.g. `db-s-1vcpu-1gb` | string |`"db-s-1vcpu-1gb"` | no |
 | database_node_count | Number of nodes that comprise the database cluster | number | `1`| no |
-| flannel_backend | Flannel Backend Type. Valid options include `vxlan`, `ipsec` or `wireguard-native` | string | `vxlan`| no |
 | server_size | Server droplet size. e.g. `s-1vcpu-2gb` | string | `s-1vcpu-2gb`| no |
 | agent_size | Agent droplet size. e.g. `s-1vcpu-2gb` | string | `s-1vcpu-2gb`| no |
 | server_count | Number of server (master) nodes to provision | number | `2`| no |

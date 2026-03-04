@@ -4,14 +4,10 @@ apt-get -yq update
 apt-get install -yq \
     ca-certificates \
     curl \
-    ntp \
-    wireguard
+    ntp
 
 # Store Droplet ID in variable (utilises DO's Metadata Service - https://developers.digitalocean.com/documentation/metadata/)
 DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
-
-# Configurar flags de k3s basado en flannel_backend
-K3S_FLANNEL_ARGS="--flannel-backend=none --disable-network-policy"
 
 # Escribir configuración de k3s
 install -d /etc/rancher/k3s
@@ -20,12 +16,12 @@ tls-san:
   - "${k3s_lb_ip}"
 EOF
 
-# k3s
+# k3s - usa el flannel nativo (vxlan) enlazado a la interfaz privada del VPC de DigitalOcean
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s - \
     --datastore-endpoint="${db_cluster_uri}" \
     ${critical_taint} \
     --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
-    $K3S_FLANNEL_ARGS \
+    --flannel-iface=eth1 \
     --disable local-storage \
     --disable servicelb \
     --disable-cloud-controller \
@@ -38,58 +34,6 @@ until kubectl get nodes >/dev/null 2>&1; do
     echo "Waiting for Kubernetes API"
     sleep 2
 done
-
-# Copy CNI scripts to disk (content injected by Terraform from user_data/cni_*.sh)
-mkdir -p /tmp/cni-scripts
-
-cat > /tmp/cni-scripts/cni_flannel.sh <<'SCRIPT_END'
-${cni_flannel_script}
-SCRIPT_END
-
-cat > /tmp/cni-scripts/cni_cilium.sh <<'SCRIPT_END'
-${cni_cilium_script}
-SCRIPT_END
-
-cat > /tmp/cni-scripts/cni_calico.sh <<'SCRIPT_END'
-${cni_calico_script}
-SCRIPT_END
-
-cat > /tmp/cni-scripts/cni_antrea.sh <<'SCRIPT_END'
-${cni_antrea_script}
-SCRIPT_END
-
-chmod +x /tmp/cni-scripts/*.sh
-
-# install CNI before applying additional manifests
-echo "=========================================="
-echo "Installing CNI: ${cni_provider}"
-echo "=========================================="
-
-case "${cni_provider}" in
-    flannel)
-        bash /tmp/cni-scripts/cni_flannel.sh
-        ;;
-    cilium)
-        bash /tmp/cni-scripts/cni_cilium.sh
-        ;;
-    calico)
-        bash /tmp/cni-scripts/cni_calico.sh
-        ;;
-    antrea)
-        bash /tmp/cni-scripts/cni_antrea.sh
-        ;;
-    none|"")
-        echo "[CNI] Skipping CNI install"
-        ;;
-    *)
-        echo "[CNI] ERROR: Unknown cni_provider: ${cni_provider}"
-        exit 1
-        ;;
-esac
-
-echo "[CNI] =========================================="
-echo "[CNI] CNI installation and validation completed"
-echo "[CNI] =========================================="
 
 # additional manifests
 while ! test -d /var/lib/rancher/k3s/server/manifests; do
@@ -120,11 +64,6 @@ EOF
 
 # csi snapshot controller
 base64 -d <<'EOF' | zcat | sudo tee /var/lib/rancher/k3s/server/manifests/snapshot-controller.yaml
-${csi_sc_manifest}
-EOF
-
-# csi snapshot validation webhook
-base64 -d <<'EOF' | zcat | sudo tee /var/lib/rancher/k3s/server/manifests/snapshot-validation-webhook.yaml
 ${csi_sc_manifest}
 EOF
 

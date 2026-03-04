@@ -4,20 +4,12 @@ apt-get -yq update
 apt-get install -yq \
     ca-certificates \
     curl \
-    ntp \
-    wireguard
+    ntp
 
 DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
 
-# Configurar flags de k3s basado en flannel_backend
-if [ "${flannel_backend}" = "none" ]; then
-    K3S_FLANNEL_ARGS=""
-else
-    K3S_FLANNEL_ARGS="--flannel-iface=eth1"
-fi
-
-# k3s
+# k3s agent - usa el flannel nativo (vxlan) enlazado a la interfaz privada del VPC de DigitalOcean
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} K3S_URL=https://${k3s_lb_ip}:6443 sh -s - \
-    --kubelet-arg="cloud-provider=external"  \
+    --kubelet-arg="cloud-provider=external" \
     --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
-    $K3S_FLANNEL_ARGS
+    --flannel-iface=eth1

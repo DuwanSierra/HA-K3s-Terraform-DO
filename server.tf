@@ -12,7 +12,6 @@ resource "digitalocean_droplet" "k3s_server" {
   user_data = templatefile("${path.module}/user_data/ks3_server.sh", {
     k3s_channel     = var.k3s_channel
     k3s_token       = random_password.k3s_token.result
-    flannel_backend = var.flannel_backend
     k3s_lb_ip       = digitalocean_loadbalancer.k3s_lb.ip
     db_cluster_uri  = local.db_cluster_uri
     critical_taint  = local.taint_critical
