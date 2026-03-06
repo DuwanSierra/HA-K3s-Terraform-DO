@@ -10,12 +10,12 @@ resource "digitalocean_droplet" "k3s_server" {
   vpc_uuid   = digitalocean_vpc.k3s_vpc.id
   ssh_keys   = var.ssh_key_fingerprints
   user_data = templatefile("${path.module}/user_data/ks3_server.sh", {
-    k3s_channel     = var.k3s_channel
-    k3s_token       = random_password.k3s_token.result
-    k3s_lb_ip       = digitalocean_loadbalancer.k3s_lb.ip
-    db_cluster_uri  = local.db_cluster_uri
-    critical_taint  = local.taint_critical
-    enable_traefik  = local.enable_traefik
+    k3s_channel              = var.k3s_channel
+    k3s_token                = random_password.k3s_token.result
+    k3s_lb_ip                = digitalocean_loadbalancer.k3s_lb.ip
+    db_cluster_uri           = local.db_cluster_uri
+    server_taint_criticalonly = var.server_taint_criticalonly
+    disable_traefik          = local.disable_traefik
   })
   depends_on = [
     digitalocean_droplet.k3s_server_init

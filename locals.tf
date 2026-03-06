@@ -14,11 +14,7 @@ locals {
   agent_droplet_tag  = digitalocean_tag.agent.name
   ccm_fw_tags        = var.server_taint_criticalonly == false ? join(",", [local.server_droplet_tag, local.agent_droplet_tag]) : local.agent_droplet_tag
 
-  critical_addons_only_true = "--node-taint \"CriticalAddonsOnly=true:NoExecute\" \\"
-
-  taint_critical = var.server_taint_criticalonly == true ? local.critical_addons_only_true : "\\"
-
-  enable_traefik = var.ingress == "traefik" ? "\\" : "--disable traefik \\"
+  disable_traefik            = var.ingress != "traefik"
 
   install_cert_manager = "wget --quiet -P /var/lib/rancher/k3s/server/manifests/ https://github.com/jetstack/cert-manager/releases/download/v${var.cert_manager_version}/cert-manager.yaml"
 

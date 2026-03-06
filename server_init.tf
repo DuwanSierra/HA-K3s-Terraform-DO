@@ -17,13 +17,13 @@ resource "digitalocean_droplet" "k3s_server_init" {
     do_ccm_fw_name      = digitalocean_firewall.ccm_firewall.name
     do_ccm_fw_tags      = local.ccm_fw_tags
     k3s_lb_ip           = digitalocean_loadbalancer.k3s_lb.ip
-    db_cluster_uri      = local.db_cluster_uri
-    critical_taint      = local.taint_critical
+    db_cluster_uri            = local.db_cluster_uri
+    server_taint_criticalonly  = var.server_taint_criticalonly
     ccm_manifest        = base64gzip(file("${path.module}/manifests/do-ccm.yaml"))
     csi_crds_manifest   = base64gzip(file("${path.module}/manifests/do-csi/crds.yaml"))
     csi_driver_manifest = base64gzip(file("${path.module}/manifests/do-csi/driver.yaml"))
     csi_sc_manifest     = base64gzip(file("${path.module}/manifests/do-csi/snapshot-controller.yaml"))
-    enable_traefik      = local.enable_traefik
+    disable_traefik     = local.disable_traefik
     traefik_ingress = var.ingress == "traefik" ? base64gzip(templatefile("${path.module}/manifests/traefik-custom.yaml", {
       traefik_ver = var.traefik_version
     })) : ""

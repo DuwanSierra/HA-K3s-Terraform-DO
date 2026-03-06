@@ -11,10 +11,15 @@ PRIVATE_IP=$(curl -s http://169.254.169.254/metadata/v1/interfaces/private/0/ipv
 PUBLIC_IP=$(curl -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address)
 
 # k3s agent - usa el flannel nativo (vxlan) enlazado a la interfaz privada del VPC de DigitalOcean
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} K3S_URL=https://${k3s_lb_ip}:6443 sh -s - \
-    --kubelet-arg="cloud-provider=external" \
-    --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
-    --flannel-iface=eth1 \
-    --node-ip=$PRIVATE_IP \
-    --advertise-address=$PRIVATE_IP \
-    --node-external-ip=$PUBLIC_IP
+install -d /etc/rancher/k3s
+cat > /etc/rancher/k3s/config.yaml <<EOF
+server: https://${k3s_lb_ip}:6443
+flannel-iface: eth1
+node-ip: $PRIVATE_IP
+node-external-ip: $PUBLIC_IP
+kubelet-arg:
+  - "cloud-provider=external"
+  - "provider-id=digitalocean://$DROPLET_ID"
+EOF
+
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s - agent

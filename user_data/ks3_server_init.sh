@@ -16,22 +16,29 @@ install -d /etc/rancher/k3s
 cat > /etc/rancher/k3s/config.yaml <<EOF
 tls-san:
   - "${k3s_lb_ip}"
+datastore-endpoint: "${db_cluster_uri}"
+flannel-iface: eth1
+node-ip: $PRIVATE_IP
+advertise-address: $PRIVATE_IP
+node-external-ip: $PUBLIC_IP
+disable:
+  - local-storage
+  - servicelb
+%{ if disable_traefik ~}
+  - traefik
+%{ endif ~}
+disable-cloud-controller: true
+kubelet-arg:
+  - "provider-id=digitalocean://$DROPLET_ID"
+  - "cloud-provider=external"
+%{ if server_taint_criticalonly ~}
+node-taint:
+  - "CriticalAddonsOnly=true:NoExecute"
+%{ endif ~}
 EOF
 
 # k3s - usa el flannel nativo (vxlan) enlazado a la interfaz privada del VPC de DigitalOcean
-curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s - \
-    --datastore-endpoint="${db_cluster_uri}" \
-    ${critical_taint} \
-    --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
-    --flannel-iface=eth1 \
-    --node-ip=$PRIVATE_IP \
-    --advertise-address=$PRIVATE_IP \
-    --node-external-ip=$PUBLIC_IP \
-    --disable local-storage \
-    --disable servicelb \
-    --disable-cloud-controller \
-    ${enable_traefik} \
-    --kubelet-arg="cloud-provider=external"
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s -
 
 # wait for api server
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
