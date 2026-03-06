@@ -16,4 +16,5 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3
     --kubelet-arg="provider-id=digitalocean://$DROPLET_ID" \
     --flannel-iface=eth1 \
     --node-ip=$PRIVATE_IP \
+    --advertise-address=$PRIVATE_IP \
     --node-external-ip=$PUBLIC_IP
