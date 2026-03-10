@@ -5,7 +5,7 @@ locals {
   db_pass = digitalocean_database_cluster.k3s.password
   db_name = digitalocean_database_cluster.k3s.database
 
-  postgres_uri = "postgres://${local.db_user}:${local.db_pass}@${local.db_host}:${local.db_port}/${local.db_name}"
+  postgres_uri = "postgres://${local.db_user}:${local.db_pass}@${local.db_host}:${local.db_port}/${local.db_name}?sslmode=require"
   mysql_uri    = "mysql://${local.db_user}:${local.db_pass}@tcp(${local.db_host}:${local.db_port})/${local.db_name}"
 
   db_cluster_uri = var.database_engine == "postgres" ? local.postgres_uri : local.mysql_uri
