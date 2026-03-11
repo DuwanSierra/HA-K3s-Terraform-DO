@@ -8,7 +8,7 @@ locals {
   postgres_uri = "postgres://${local.db_user}:${local.db_pass}@${local.db_host}:${local.db_port}/${local.db_name}?sslmode=require"
   mysql_uri    = "mysql://${local.db_user}:${local.db_pass}@tcp(${local.db_host}:${local.db_port})/${local.db_name}"
 
-  db_cluster_uri = var.database_engine == "postgres" ? local.postgres_uri : local.mysql_uri
+  db_cluster_uri = var.database_engine == "postgres" ? digitalocean_database_connection_pool.k3s_pool[0].private_uri : local.mysql_uri
 
   server_droplet_tag = digitalocean_tag.server.name
   agent_droplet_tag  = digitalocean_tag.agent.name

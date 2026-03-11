@@ -58,6 +58,22 @@ variable "database_node_count" {
   default     = 1
 }
 
+variable "database_pool_size" {
+  type        = number
+  description = "Number of connections in the PostgreSQL connection pool (only used when database_engine is postgres)"
+  default     = 10
+}
+
+variable "database_pool_mode" {
+  type        = string
+  description = "Connection pool mode: session, transaction, or statement. Use 'transaction' for k3s compatibility"
+  default     = "transaction"
+  validation {
+    condition     = contains(["session", "transaction", "statement"], var.database_pool_mode)
+    error_message = "Invalid pool mode. Valid modes are session, transaction, or statement."
+  }
+}
+
 variable "server_size" {
   type        = string
   description = "Server droplet size. e.g. s-1vcpu-2gb"

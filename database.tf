@@ -13,6 +13,16 @@ resource "digitalocean_database_cluster" "k3s" {
   node_count           = var.database_node_count
 }
 
+resource "digitalocean_database_connection_pool" "k3s_pool" {
+  count      = var.database_engine == "postgres" ? 1 : 0
+  cluster_id = digitalocean_database_cluster.k3s.id
+  name       = "k3s-pool"
+  mode       = var.database_pool_mode
+  size       = var.database_pool_size
+  db_name    = digitalocean_database_cluster.k3s.database
+  user       = digitalocean_database_user.dbuser.name
+}
+
 resource "digitalocean_project_resources" "k3s_ext_datastore" {
   project = digitalocean_project.k3s_cluster.id
   resources = [
