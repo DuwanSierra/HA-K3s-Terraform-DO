@@ -20,7 +20,7 @@ resource "digitalocean_database_connection_pool" "k3s_pool" {
   mode       = var.database_pool_mode
   size       = var.database_pool_size
   db_name    = digitalocean_database_cluster.k3s.database
-  user       = digitalocean_database_user.dbuser.name
+  user       = digitalocean_database_cluster.k3s.user
 }
 
 resource "digitalocean_project_resources" "k3s_ext_datastore" {

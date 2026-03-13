@@ -66,8 +66,8 @@ variable "database_pool_size" {
 
 variable "database_pool_mode" {
   type        = string
-  description = "Connection pool mode: session, transaction, or statement. Use 'transaction' for k3s compatibility"
-  default     = "transaction"
+  description = "Connection pool mode: session, transaction, or statement. k3s requires 'session' (prepared statements are incompatible with transaction mode)"
+  default     = "session"
   validation {
     condition     = contains(["session", "transaction", "statement"], var.database_pool_mode)
     error_message = "Invalid pool mode. Valid modes are session, transaction, or statement."
