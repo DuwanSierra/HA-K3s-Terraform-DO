@@ -19,6 +19,7 @@ resource "digitalocean_droplet" "k3s_server_init" {
     k3s_lb_ip           = digitalocean_loadbalancer.k3s_lb.ip
     db_cluster_uri            = local.db_cluster_uri
     server_taint_criticalonly  = var.server_taint_criticalonly
+    cni_provider        = var.cni_provider
     ccm_manifest        = base64gzip(file("${path.module}/manifests/do-ccm.yaml"))
     csi_crds_manifest   = base64gzip(file("${path.module}/manifests/do-csi/crds.yaml"))
     csi_driver_manifest = base64gzip(file("${path.module}/manifests/do-csi/driver.yaml"))

@@ -17,7 +17,12 @@ cat > /etc/rancher/k3s/config.yaml <<EOF
 tls-san:
   - "${k3s_lb_ip}"
 datastore-endpoint: "${db_cluster_uri}"
+%{ if cni_provider == "flannel" ~}
 flannel-iface: eth1
+%{ else ~}
+flannel-backend: none
+disable-network-policy: true
+%{ endif ~}
 node-ip: $PRIVATE_IP
 advertise-address: $PRIVATE_IP
 node-external-ip: $PUBLIC_IP
@@ -37,8 +42,13 @@ node-taint:
 %{ endif ~}
 EOF
 
-# k3s - usa el flannel nativo (vxlan) enlazado a la interfaz privada del VPC de DigitalOcean
+%{ if cni_provider == "flannel" ~}
+# k3s con Flannel nativo (VXLAN) enlazado a la interfaz VPC de DigitalOcean
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s -
+%{ else ~}
+# k3s sin CNI propio; se instalará ${cni_provider} después
+curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s -
+%{ endif ~}
 
 # wait for api server
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
@@ -111,3 +121,48 @@ EOF
 base64 -d <<'EOF' | zcat | sudo tee /var/lib/rancher/k3s/server/manifests/system-upgrade-controller.yaml
 ${sys_upgrade_ctrl}
 EOF
+
+%{ if cni_provider == "calico" ~}
+# ─── Calico CNI (Tigera Operator) ────────────────────────────────────────────
+echo "[CNI] Instalando Calico via Tigera Operator..."
+
+# Tigera Operator
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.1/manifests/tigera-operator.yaml
+
+# Esperar a que el CRD Installation esté registrado
+until kubectl get crd installations.operator.tigera.io >/dev/null 2>&1; do
+    echo "[CNI] Esperando CRD tigera Installation..."
+    sleep 5
+done
+
+# Installation CR: CIDR de k3s (10.42.0.0/16) + interfaz VPC eth1
+kubectl apply -f - <<'CALICO_EOF'
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  calicoNetwork:
+    ipPools:
+      - name: default-ipv4-ippool
+        cidr: 10.42.0.0/16
+        encapsulation: VXLAN
+        natOutgoing: Enabled
+        nodeSelector: all()
+    nodeAddressAutodetectionV4:
+      interface: eth1
+---
+apiVersion: operator.tigera.io/v1
+kind: APIServer
+metadata:
+  name: default
+spec: {}
+CALICO_EOF
+
+echo "[CNI] Esperando que calico-node esté Ready (hasta 5 min)..."
+kubectl wait pods -l k8s-app=calico-node -n calico-system \
+    --for=condition=Ready --timeout=300s
+
+echo "[CNI] Calico instalado correctamente"
+# ─────────────────────────────────────────────────────────────────────────────
+%{ endif ~}

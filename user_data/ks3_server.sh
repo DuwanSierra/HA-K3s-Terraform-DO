@@ -17,7 +17,12 @@ cat > /etc/rancher/k3s/config.yaml <<EOF
 tls-san:
   - "${k3s_lb_ip}"
 datastore-endpoint: "${db_cluster_uri}"
+%{ if cni_provider == "flannel" ~}
 flannel-iface: eth1
+%{ else ~}
+flannel-backend: none
+disable-network-policy: true
+%{ endif ~}
 node-ip: $PRIVATE_IP
 advertise-address: $PRIVATE_IP
 node-external-ip: $PUBLIC_IP
@@ -37,5 +42,4 @@ node-taint:
 %{ endif ~}
 EOF
 
-# k3s - usa el flannel nativo (vxlan) enlazado a la interfaz privada del VPC de DigitalOcean
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=${k3s_channel} K3S_TOKEN=${k3s_token} sh -s - server

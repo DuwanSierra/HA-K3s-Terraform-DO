@@ -16,6 +16,7 @@ resource "digitalocean_droplet" "k3s_server" {
     db_cluster_uri           = local.db_cluster_uri
     server_taint_criticalonly = var.server_taint_criticalonly
     disable_traefik          = local.disable_traefik
+    cni_provider             = var.cni_provider
   })
   depends_on = [
     digitalocean_droplet.k3s_server_init

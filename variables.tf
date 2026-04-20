@@ -166,3 +166,13 @@ variable "droplet_image" {
   description = "Droplet image to use."
   default     = "ubuntu-24-04-x64"
 }
+
+variable "cni_provider" {
+  type        = string
+  description = "CNI plugin: flannel (nativo k3s), calico, cilium o antrea. Con cualquier valor distinto de flannel, k3s arranca sin CNI propio."
+  default     = "flannel"
+  validation {
+    condition     = contains(["flannel", "calico", "cilium", "antrea"], var.cni_provider)
+    error_message = "CNI válidos: flannel, calico, cilium, antrea."
+  }
+}

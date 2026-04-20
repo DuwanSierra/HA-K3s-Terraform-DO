@@ -10,11 +10,12 @@ DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
 PRIVATE_IP=$(curl -s http://169.254.169.254/metadata/v1/interfaces/private/0/ipv4/address)
 PUBLIC_IP=$(curl -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address)
 
-# k3s agent - usa el flannel nativo (vxlan) enlazado a la interfaz privada del VPC de DigitalOcean
 install -d /etc/rancher/k3s
 cat > /etc/rancher/k3s/config.yaml <<EOF
 server: https://${k3s_lb_ip}:6443
+%{ if cni_provider == "flannel" ~}
 flannel-iface: eth1
+%{ endif ~}
 node-ip: $PRIVATE_IP
 node-external-ip: $PUBLIC_IP
 kubelet-arg:
