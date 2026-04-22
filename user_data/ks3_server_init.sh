@@ -166,3 +166,53 @@ kubectl wait pods -l k8s-app=calico-node -n calico-system \
 echo "[CNI] Calico instalado correctamente"
 # ─────────────────────────────────────────────────────────────────────────────
 %{ endif ~}
+
+%{ if cni_provider == "cilium" ~}
+# ─── Cilium CNI (via Helm) ────────────────────────────────────────────────────
+echo "[CNI] Instalando Cilium via Helm..."
+
+# Instalar Helm
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Agregar repositorio de Cilium
+helm repo add cilium https://helm.cilium.io/
+helm repo update
+
+# Instalar Cilium con VXLAN, CIDR de k3s e interfaz VPC de DigitalOcean (eth1)
+# operator.replicas=1 porque el clúster puede arrancar con un solo nodo ready
+helm install cilium cilium/cilium --version 1.16.5 \
+    --namespace kube-system \
+    --set k8sServiceHost="$PRIVATE_IP" \
+    --set k8sServicePort=6443 \
+    --set ipam.mode=kubernetes \
+    --set routingMode=tunnel \
+    --set tunnelProtocol=vxlan \
+    --set devices=eth1 \
+    --set operator.replicas=1
+
+echo "[CNI] Esperando que cilium-agent pods estén Ready (hasta 5 min)..."
+kubectl wait pods -l k8s-app=cilium -n kube-system \
+    --for=condition=Ready --timeout=300s
+
+echo "[CNI] Cilium instalado correctamente"
+# ─────────────────────────────────────────────────────────────────────────────
+%{ endif ~}
+
+%{ if cni_provider == "antrea" ~}
+# ─── Antrea CNI ───────────────────────────────────────────────────────────────
+echo "[CNI] Instalando Antrea..."
+
+# Descargar y aplicar manifiesto de Antrea v2.2.0
+# Configurar serviceCIDR de k3s (10.43.0.0/16) y transportInterface eth1
+curl -sL https://github.com/antrea-io/antrea/releases/download/v2.2.0/antrea.yml \
+  | sed 's|#transportInterface: ""|transportInterface: "eth1"|' \
+  | sed 's|#serviceCIDR: "10.96.0.0/12"|serviceCIDR: "10.43.0.0/16"|' \
+  | kubectl apply -f -
+
+echo "[CNI] Esperando que antrea-agent pods estén Ready (hasta 5 min)..."
+kubectl wait pods -l app=antrea,component=antrea-agent -n kube-system \
+    --for=condition=Ready --timeout=300s
+
+echo "[CNI] Antrea instalado correctamente"
+# ─────────────────────────────────────────────────────────────────────────────
+%{ endif ~}
